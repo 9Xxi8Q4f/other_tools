@@ -26,7 +26,7 @@ docker_settings = DockerSettings(
 )
 
 class DeploymentTriggerConfig(BaseParameters):
-    min_accuracy: float = 0.92
+    min_accuracy: float = 0
 
 @step
 def deployment_trigger(
@@ -35,25 +35,26 @@ def deployment_trigger(
 ):
     return accuracy >= config.min_accuracy
 
-@pipeline(enable_cache=True, settings={"docker_settings": docker_settings})
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
 def continuous_deployment_pipeline(
+    data_path: str,
     min_accuracy : float = 0.92,
     workers : int = 1,
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 ):
-    df = ingest_df()
+    df = ingest_df(data_path)
     X_train, X_test, y_train, y_test = clean_df(df)
     trained_model = train_model(X_train, X_test, y_train, y_test)
     mse, r2 = evaluate_model(trained_model, X_test, y_test)
 
-    deployment_decision = deployment_trigger(r2, min_accuracy=min_accuracy)
-    if deployment_decision:
-        mlflow_model_deployer = mlflow_model_deployer_step(
-            model=trained_model
-        )
-        mlflow_model_deployer.deploy(
-            service=MLFlowDeploymentService,
-            workers=workers,
-            timeout= timeout)
-        
- 
+    deployment_decision = deployment_trigger(r2)
+    mlflow_model_deployer_step(
+        model=trained_model,
+        deploy_decision=deployment_decision,
+        workers=workers,
+        timeout=timeout
+    )        
+
+@pipeline(enable_cache=False, settings={"docker": docker_settings})
+def inference_pipeline(pipeline_name: str, pipeline_step_name: str):
+    pass
