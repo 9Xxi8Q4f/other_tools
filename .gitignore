@@ -2,3 +2,5 @@ mlops-projects-course/
 .venv/
 .python-version
 .zen
+__pycache__
+
