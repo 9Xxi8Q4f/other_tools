@@ -3,5 +3,5 @@ mlops-projects-course/
 .python-version
 .zen
 __pycache__
-
+*.ipynb
 steps/__pycache__/config.cpython-310.pyc
